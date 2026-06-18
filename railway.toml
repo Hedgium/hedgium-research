@@ -1,0 +1,5 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+releaseCommand = "python manage.py migrate --noinput && python manage.py collectstatic --noinput"

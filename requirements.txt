@@ -1,0 +1,27 @@
+Django==5.2.6
+python-decouple==3.8
+django-ninja==1.4.3
+django-ninja-extra
+pydantic==2.11.7
+dj-database-url==3.0.1
+psycopg2-binary==2.9.10
+django-cors-headers==4.8.0
+whitenoise==6.10.0
+celery==5.5.3
+redis==6.4.0
+gunicorn==23.0.0
+requests>=2.32.0
+
+# Phase 2+ (feature engineering & ML)
+pandas>=2.2.0
+pandas-ta>=0.3.14b
+scikit-learn>=1.5.0
+xgboost>=2.1.0
+lightgbm>=4.0.0
+catboost>=1.2.0
+joblib>=1.3.0
+openai>=1.35.0
+anthropic>=0.34.0
+
+# Phase 1 (OHLCV ingestion via Kite)
+kiteconnect==5.0.1
