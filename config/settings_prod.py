@@ -43,6 +43,9 @@ ALLOWED_HOSTS = [
 _railway_domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
 if _railway_domain:
     ALLOWED_HOSTS.append(_railway_domain)
+for _local in ("localhost", "127.0.0.1"):
+    if _local not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_local)
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()

@@ -7,3 +7,4 @@ class JobsConfig(AppConfig):
 
     def ready(self):
         from jobs.tasks import agent_tasks, feature_tasks, ingestion_tasks, ml_tasks  # noqa: F401
+        from jobs import signals  # noqa: F401

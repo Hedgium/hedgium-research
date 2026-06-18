@@ -54,6 +54,9 @@ railway run python manage.py seed_nifty50
 
 - Health: `GET /api/research/health/`
 - Report: `GET /api/research/TCS/`
+- Tasks (admin): `GET /api/research/jobs/`, `POST /api/research/jobs/run/?task_name=...`
+
+In the webapp admin UI: **Research → Jobs** (`/admin/research/tasks`).
 
 ## Phase 1 — Data ingestion
 
