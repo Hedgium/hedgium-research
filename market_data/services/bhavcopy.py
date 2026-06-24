@@ -95,6 +95,7 @@ def fetch_bhavcopy(trade_date: date, client: NSEClient | None = None) -> str:
     client = client or NSEClient()
     errors: list[str] = []
     for url in _bhavcopy_urls(trade_date):
+        print(url)
         try:
             content = client.get_bytes(url)
             if url.endswith(".zip"):

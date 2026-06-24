@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
-
-from django.utils import timezone
 
 from market_data.models import FIIDIIActivity
 
 from .nse_client import NSEClient
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_nse_date(value: str) -> date | None:
+    for fmt in ("%d-%b-%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(value.strip(), fmt).date()
+        except ValueError:
+            continue
+    return None
 
 
 def _to_decimal(value) -> Decimal | None:
@@ -27,22 +34,25 @@ def _to_decimal(value) -> Decimal | None:
         return None
 
 
-def ingest_fii_dii(trade_date: date | None = None) -> dict:
+def ingest_fii_dii() -> dict:
     """
     Fetch FII/DII provisional data from NSE JSON API.
-    Stores market-level net flows for the trade date.
+    Stores market-level net flows for the trade date returned by NSE.
     """
-    trade_date = trade_date or timezone.localdate()
     client = NSEClient()
 
     try:
         payload = client.get_json("/api/fiidiiTradeReact")
     except Exception as exc:
         logger.exception("FII/DII fetch failed")
-        return {"status": "error", "date": str(trade_date), "error": str(exc)}
+        return {"status": "error", "error": str(exc)}
 
     if not isinstance(payload, list) or not payload:
-        return {"status": "error", "date": str(trade_date), "error": "empty FII/DII payload"}
+        return {"status": "error", "error": "empty FII/DII payload"}
+
+    trade_date = _parse_nse_date(payload[0].get("date", ""))
+    if trade_date is None:
+        return {"status": "error", "error": "invalid or missing date in FII/DII payload"}
 
     # NSE returns category rows — pick FII and DII net values
     fii_net = None
@@ -50,6 +60,14 @@ def ingest_fii_dii(trade_date: date | None = None) -> dict:
     fii_buy = fii_sell = dii_buy = dii_sell = None
 
     for row in payload:
+        row_date = _parse_nse_date(row.get("date", ""))
+        if row_date != trade_date:
+            return {
+                "status": "error",
+                "date": str(trade_date),
+                "error": "mixed dates in FII/DII payload",
+            }
+
         category = (row.get("category") or "").strip().upper()
         if category == "FII/FPI":
             fii_buy = _to_decimal(row.get("buyValue"))

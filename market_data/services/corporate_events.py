@@ -14,19 +14,42 @@ from .nse_client import NSEClient
 
 logger = logging.getLogger(__name__)
 
-EVENT_TYPE_MAP = {
-    "bonus": CorporateEvent.EventType.BONUS,
-    "split": CorporateEvent.EventType.SPLIT,
-    "rights": CorporateEvent.EventType.RIGHTS,
-    "merger": CorporateEvent.EventType.MERGER,
-    "demerger": CorporateEvent.EventType.DEMERGER,
-    "acquisition": CorporateEvent.EventType.ACQUISITION,
+# Order matters: e.g. "demerger" must be checked before "merger".
+EVENT_TYPE_MAP: tuple[tuple[str, str], ...] = (
+    ("demerger", CorporateEvent.EventType.DEMERGER),
+    ("merger", CorporateEvent.EventType.MERGER),
+    ("acquisition", CorporateEvent.EventType.ACQUISITION),
+    ("buy back", CorporateEvent.EventType.BUYBACK),
+    ("buyback", CorporateEvent.EventType.BUYBACK),
+    ("distribution", CorporateEvent.EventType.DISTRIBUTION),
+    ("interim dividend", CorporateEvent.EventType.DIVIDEND),
+    ("special dividend", CorporateEvent.EventType.DIVIDEND),
+    ("dividend", CorporateEvent.EventType.DIVIDEND),
+    ("interest payment", CorporateEvent.EventType.INTEREST_PAYMENT),
+    ("face value split", CorporateEvent.EventType.SPLIT),
+    ("sub-division", CorporateEvent.EventType.SPLIT),
+    ("bonus", CorporateEvent.EventType.BONUS),
+    ("rights", CorporateEvent.EventType.RIGHTS),
+    ("split", CorporateEvent.EventType.SPLIT),
+)
+
+EVENT_TYPE_SEVERITY = {
+    CorporateEvent.EventType.DIVIDEND: CorporateEvent.Severity.LOW,
+    CorporateEvent.EventType.DISTRIBUTION: CorporateEvent.Severity.LOW,
+    CorporateEvent.EventType.INTEREST_PAYMENT: CorporateEvent.Severity.LOW,
+    CorporateEvent.EventType.BONUS: CorporateEvent.Severity.LOW,
+    CorporateEvent.EventType.SPLIT: CorporateEvent.Severity.LOW,
+    CorporateEvent.EventType.BUYBACK: CorporateEvent.Severity.MEDIUM,
+    CorporateEvent.EventType.MERGER: CorporateEvent.Severity.MEDIUM,
+    CorporateEvent.EventType.DEMERGER: CorporateEvent.Severity.MEDIUM,
+    CorporateEvent.EventType.ACQUISITION: CorporateEvent.Severity.MEDIUM,
+    CorporateEvent.EventType.RIGHTS: CorporateEvent.Severity.MEDIUM,
 }
 
 
 def _map_event_type(purpose: str) -> str | None:
     text = (purpose or "").lower()
-    for key, event_type in EVENT_TYPE_MAP.items():
+    for key, event_type in EVENT_TYPE_MAP:
         if key in text:
             return event_type
     return None
@@ -48,7 +71,7 @@ def ingest_corporate_actions(
     index_name: str = "NIFTY50",
 ) -> dict:
     to_date = to_date or timezone.localdate()
-    from_date = from_date or (to_date - timedelta(days=30))
+    from_date = from_date or (to_date - timedelta(days=15))
 
     client = NSEClient()
     path = (
@@ -102,7 +125,9 @@ def ingest_corporate_actions(
             title=purpose[:500],
             defaults={
                 "details": row,
-                "severity": CorporateEvent.Severity.MEDIUM,
+                "severity": EVENT_TYPE_SEVERITY.get(
+                    event_type, CorporateEvent.Severity.MEDIUM
+                ),
                 "source": "NSE",
             },
         )
